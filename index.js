@@ -28,7 +28,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        var applicationTypes = req.jingle.contents.map(function (content) {
+        var applicationTypes= req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
             }
@@ -42,19 +42,19 @@ function SessionManager(conf) {
     this.config = {
         debug: false,
         peerConnectionConfig: {
-            iceServers: conf.iceServers || [{ 'urls': 'stun:stun.l.google.com:19302' }]
+            iceServers: conf.iceServers || [{'urls': 'stun:stun.l.google.com:19302'}]
         },
         peerConnectionConstraints: {
             optional: [
-                { DtlsSrtpKeyAgreement: true },
-                { RtpDataChannels: false }
+                {DtlsSrtpKeyAgreement: true},
+                {RtpDataChannels: false}
             ]
         },
         media: {
             audio: true,
             video: true
         },
-        useJingle: conf.useJingle !== 'undefined' ? conf.useJingle : true,
+        useJingle: conf.iceServers?conf.iceServers:true,
     };
 
     for (var item in conf) {
@@ -75,7 +75,7 @@ SessionManager.prototype.addICEServer = function (server) {
     //    [credential: '']
     // }
     if (typeof server === 'string') {
-        server = { urls: server };
+        server = {urls: server};
     }
     this.iceServers.push(server);
 };
