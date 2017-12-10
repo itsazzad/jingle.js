@@ -28,7 +28,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        var applicationTypes= req.jingle.contents.map(function (content) {
+        var applicationTypes = req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
             }
@@ -42,19 +42,18 @@ function SessionManager(conf) {
     this.config = {
         debug: false,
         peerConnectionConfig: {
-            iceServers: conf.iceServers || [{'urls': 'stun:stun.l.google.com:19302'}]
+            iceServers: conf.iceServers || [{ 'urls': 'stun:stun.l.google.com:19302' }]
         },
         peerConnectionConstraints: {
             optional: [
-                {DtlsSrtpKeyAgreement: true},
-                {RtpDataChannels: false}
+                { DtlsSrtpKeyAgreement: true },
+                { RtpDataChannels: false }
             ]
         },
         media: {
             audio: true,
             video: true
-        },
-        useJingle: conf.iceServers?conf.iceServers:true,
+        }
     };
 
     for (var item in conf) {
@@ -75,7 +74,7 @@ SessionManager.prototype.addICEServer = function (server) {
     //    [credential: '']
     // }
     if (typeof server === 'string') {
-        server = {urls: server};
+        server = { urls: server };
     }
     this.iceServers.push(server);
 };
@@ -132,15 +131,24 @@ SessionManager.prototype.addSession = function (session) {
 };
 
 SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
+    let peerJID;
+    let useJingle;
+    if (peer !== null && typeof peer === 'object') {
+        peerJID = peer.jid;
+        useJingle = peer.useJingle;
+    } else {
+        peerJID = peer;
+        useJingle = true;
+    }
     var session = new MediaSession({
         sid: sid,
-        peer: peer,
+        peer: peerJID,
         initiator: true,
         stream: stream,
         parent: this,
         iceServers: this.iceServers,
         constraints: this.config.peerConnectionConstraints,
-        useJingle: this.config.useJingle,
+        useJingle,
     });
 
     this.addSession(session);
@@ -216,6 +224,7 @@ SessionManager.prototype._log = function (level, message) {
 };
 
 SessionManager.prototype.process = function (req) {
+    console.error('SessionManager.prototype.process', req);
     var self = this;
 
     // Extract the request metadata that we need to verify
