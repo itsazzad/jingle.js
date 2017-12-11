@@ -224,7 +224,7 @@ SessionManager.prototype._log = function (level, message) {
 };
 
 SessionManager.prototype.process = function (req) {
-    console.error('SessionManager.prototype.process', req);
+    console.error('SessionManager.prototype.process', req, this.sessions);
     var self = this;
 
     // Extract the request metadata that we need to verify
