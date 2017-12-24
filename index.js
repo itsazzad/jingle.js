@@ -5,12 +5,12 @@ var WildEmitter = require('wildemitter');
 var BaseSession = require('jingle-session');
 var MediaSession = require('jingle-media-session');
 var FileSession = require('jingle-filetransfer-session');
-var consoleError = require('../console');
+var customConsole = require('../custom-console');
 var sourceFileName = 'jingle';
 
 
 function SessionManager(conf) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     WildEmitter.call(this);
 
     conf = conf || {};
@@ -22,7 +22,7 @@ function SessionManager(conf) {
     this.peers = {};
 
     this.prepareSession = conf.prepareSession || function (opts) {
-        consoleError(sourceFileName, arguments.callee.name, ...arguments);
+        customConsole(sourceFileName, arguments.callee.name, ...arguments);
         if (opts.applicationTypes.indexOf('rtp') >= 0) {
             return new MediaSession(opts);
         }
@@ -32,7 +32,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        consoleError(sourceFileName, arguments.callee.name, ...arguments);
+        customConsole(sourceFileName, arguments.callee.name, ...arguments);
         var applicationTypes = req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
@@ -85,7 +85,7 @@ SessionManager.prototype.addICEServer = function (server) {
 };
 
 SessionManager.prototype.addSession = function (session) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     var self = this;
 
     var sid = session.sid;
@@ -100,7 +100,7 @@ SessionManager.prototype.addSession = function (session) {
 
     // Automatically clean up tracked sessions
     session.on('terminated', function () {
-        consoleError(sourceFileName, arguments.callee.name, ...arguments);
+        customConsole(sourceFileName, arguments.callee.name, ...arguments);
         var peers = self.peers[peer] || [];
         if (peers.length) {
             peers.splice(peers.indexOf(session), 1);
@@ -138,7 +138,7 @@ SessionManager.prototype.addSession = function (session) {
 };
 
 SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     let peerJID;
     let useJingle;
     if (peer !== null && typeof peer === 'object') {
@@ -165,7 +165,7 @@ SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
 };
 
 SessionManager.prototype.createFileTransferSession = function (peer, sid) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     var session = new FileSession({
         sid: sid,
         peer: peer,
@@ -180,7 +180,7 @@ SessionManager.prototype.createFileTransferSession = function (peer, sid) {
 };
 
 SessionManager.prototype.endPeerSessions = function (peer, reason, silent) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     peer = peer.full || peer;
 
     var sessions = this.peers[peer] || [];
@@ -192,7 +192,7 @@ SessionManager.prototype.endPeerSessions = function (peer, reason, silent) {
 };
 
 SessionManager.prototype.endAllSessions = function (reason, silent) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     var self = this;
     Object.keys(this.peers).forEach(function (peer) {
         self.endPeerSessions(peer, reason, silent);
@@ -200,7 +200,7 @@ SessionManager.prototype.endAllSessions = function (reason, silent) {
 };
 
 SessionManager.prototype._createIncomingSession = function (meta, req) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     var session;
 
     if (this.prepareSession) {
@@ -220,7 +220,7 @@ SessionManager.prototype._createIncomingSession = function (meta, req) {
 };
 
 SessionManager.prototype._sendError = function (to, id, data) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     if (!data.type) {
         data.type = 'cancel';
     }
@@ -233,12 +233,12 @@ SessionManager.prototype._sendError = function (to, id, data) {
 };
 
 SessionManager.prototype._log = function (level, message) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     this.emit('log:' + level, message);
 };
 
 SessionManager.prototype.process = function (req) {
-    consoleError(sourceFileName, arguments.callee.name, ...arguments);
+    customConsole(sourceFileName, arguments.callee.name, ...arguments);
     var self = this;
 
     // Extract the request metadata that we need to verify
@@ -390,7 +390,7 @@ SessionManager.prototype.process = function (req) {
     }
 
     session.process(action, req.jingle, function (err) {
-        consoleError(sourceFileName, arguments.callee.name, ...arguments);
+        customConsole(sourceFileName, arguments.callee.name, ...arguments);
         if (err) {
             self._log('error', 'Could not process request', req, err);
             self._sendError(sender, rid, err);
