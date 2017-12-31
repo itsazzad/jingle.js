@@ -21,7 +21,7 @@
     "covert": "^1.0.0",
     "jshint": "^2.5.5",
     "nsp": "^0.5.2",
-    "precommit-hook": "^1.0.7",
+    "precommit-hook": "^3.0.0",
     "tap-spec": "^0.2.1",
     "tape": "^2.14.0",
     "testling": "^1.7.1",
@@ -45,9 +45,13 @@
     "audit": "make audit",
     "build": "make build",
     "test": "jshint .",
-    "test-travis": "test/run-tests"
+    "test-travis": "test/run-tests",
+    "lint": "jshint .",
+    "validate": "npm ls"
   },
   "testling": {
     "files": "test/*.js"
-  }
+  },
+  "pre-commit": [
+  ]
 }
