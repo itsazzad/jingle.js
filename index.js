@@ -28,7 +28,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        var applicationTypes= req.jingle.contents.map(function (content) {
+        var applicationTypes = req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
             }
@@ -40,19 +40,12 @@ function SessionManager(conf) {
     };
 
     this.config = {
-        debug: false,
-        peerConnectionConfig: {
-            iceServers: conf.iceServers || [{'urls': 'stun:stun.l.google.com:19302'}]
-        },
-        peerConnectionConstraints: {
-            optional: [
-                {DtlsSrtpKeyAgreement: true},
-                {RtpDataChannels: false}
-            ]
-        },
-        media: {
-            audio: true,
-            video: true
+        debug: false, peerConnectionConfig: {
+            iceServers: conf.iceServers || [{ 'urls': 'stun:stun.l.google.com:19302' }]
+        }, peerConnectionConstraints: {
+            optional: [{ DtlsSrtpKeyAgreement: true }, { RtpDataChannels: false }]
+        }, media: {
+            audio: true, video: true
         }
     };
 
@@ -74,7 +67,7 @@ SessionManager.prototype.addICEServer = function (server) {
     //    [credential: '']
     // }
     if (typeof server === 'string') {
-        server = {urls: server};
+        server = { urls: server };
     }
     this.iceServers.push(server);
 };
@@ -133,36 +126,32 @@ SessionManager.prototype.addSession = function (session) {
 SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
     let peerJID;
     let useJingle;
-	if (peer !== null && typeof peer === 'object') {
-		peerJID = peer.jid;
-		useJingle = peer.useJingle;
-	} else {
-		peerJID = peer;
-		useJingle = true;
-	}
-	var session = new MediaSession({
-		sid: sid,
-		peer: peerJID,
-		initiator: true,
-		stream: stream,
-		parent: this,
-		iceServers: this.iceServers,
-		constraints: this.config.peerConnectionConstraints,
-		useJingle,
-	});
+    if (peer !== null && typeof peer === 'object') {
+        peerJID = peer.jid;
+        useJingle = peer.useJingle;
+    } else {
+        peerJID = peer;
+        useJingle = true;
+    }
+    var session = new MediaSession({
+        sid: sid,
+        peer: peerJID,
+        initiator: true,
+        stream: stream,
+        parent: this,
+        iceServers: this.iceServers,
+        constraints: this.config.peerConnectionConstraints,
+        useJingle,
+    });
 
-	this.addSession(session);
+    this.addSession(session);
 
-	return session;
+    return session;
 };
 
 SessionManager.prototype.createFileTransferSession = function (peer, sid) {
     var session = new FileSession({
-        sid: sid,
-        peer: peer,
-        initiator: true,
-        parent: this,
-        iceServers: this.iceServers
+        sid: sid, peer: peer, initiator: true, parent: this, iceServers: this.iceServers
     });
 
     this.addSession(session);
@@ -212,10 +201,7 @@ SessionManager.prototype._sendError = function (to, id, data) {
         data.type = 'cancel';
     }
     this.emit('send', {
-        to: to,
-        id: id,
-        type: 'error',
-        error: data
+        to: to, id: id, type: 'error', error: data
     });
 };
 
@@ -275,8 +261,7 @@ SessionManager.prototype.process = function (req) {
         if (!session) {
             this._log('error', 'Unknown session', sid);
             return this._sendError(sender, rid, {
-                condition: 'item-not-found',
-                jingleCondition: 'unknown-session'
+                condition: 'item-not-found', jingleCondition: 'unknown-session'
             });
         }
 
@@ -284,8 +269,7 @@ SessionManager.prototype.process = function (req) {
         if (session.peerID !== sender || session.ended) {
             this._log('error', 'Session has ended, or action has wrong sender');
             return this._sendError(sender, rid, {
-                condition: 'item-not-found',
-                jingleCondition: 'unknown-session'
+                condition: 'item-not-found', jingleCondition: 'unknown-session'
             });
         }
 
@@ -293,8 +277,7 @@ SessionManager.prototype.process = function (req) {
         if (action === 'session-accept' && !session.pending) {
             this._log('error', 'Tried to accept session twice', sid);
             return this._sendError(sender, rid, {
-                condition: 'unexpected-request',
-                jingleCondition: 'out-of-order'
+                condition: 'unexpected-request', jingleCondition: 'out-of-order'
             });
         }
 
@@ -303,8 +286,7 @@ SessionManager.prototype.process = function (req) {
             this._log('error', 'Tie break during pending request');
             if (session.isInitiator) {
                 return this._sendError(sender, rid, {
-                    condition: 'conflict',
-                    jingleCondition: 'tie-break'
+                    condition: 'conflict', jingleCondition: 'tie-break'
                 });
             }
         }
@@ -323,16 +305,14 @@ SessionManager.prototype.process = function (req) {
             if (this.selfID > session.peerID && this.performTieBreak(session, req)) {
                 this._log('error', 'Tie break new session because of duplicate sids');
                 return this._sendError(sender, rid, {
-                    condition: 'conflict',
-                    jingleCondition: 'tie-break'
+                    condition: 'conflict', jingleCondition: 'tie-break'
                 });
             }
         } else {
             // The other side is just doing it wrong.
             this._log('error', 'Someone is doing this wrong');
             return this._sendError(sender, rid, {
-                condition: 'unexpected-request',
-                jingleCondition: 'out-of-order'
+                condition: 'unexpected-request', jingleCondition: 'out-of-order'
             });
         }
     } else if (this.peers[sender] && this.peers[sender].length) {
@@ -344,8 +324,7 @@ SessionManager.prototype.process = function (req) {
             if (sess && sess.pending && sess.sid > sid && this.performTieBreak(sess, req)) {
                 this._log('info', 'Tie break session-initiate');
                 return this._sendError(sender, rid, {
-                    condition: 'conflict',
-                    jingleCondition: 'tie-break'
+                    condition: 'conflict', jingleCondition: 'tie-break'
                 });
             }
         }
@@ -379,9 +358,7 @@ SessionManager.prototype.process = function (req) {
             self._sendError(sender, rid, err);
         } else {
             self.emit('send', {
-                to: sender,
-                id: rid,
-                type: 'result',
+                to: sender, id: rid, type: 'result',
             });
 
             // Wait for the initial action to be processed before emitting
