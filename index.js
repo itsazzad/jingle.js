@@ -5,6 +5,7 @@ var WildEmitter = require('wildemitter');
 var BaseSession = require('jingle-session');
 var MediaSession = require('jingle-media-session');
 var FileSession = require('jingle-filetransfer-session');
+var sjj = require('sdp-jingle-json');
 
 
 function SessionManager(conf) {
@@ -17,6 +18,7 @@ function SessionManager(conf) {
 
     this.sessions = {};
     this.peers = {};
+    this.useJingle = true;
 
     this.prepareSession = conf.prepareSession || function (opts) {
         if (opts.applicationTypes.indexOf('rtp') >= 0) {
@@ -136,9 +138,11 @@ SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
     if (peer !== null && typeof peer === 'object') {
         peerJID = peer.jid;
         useJingle = peer.useJingle;
+        this.useJingle = peer.useJingle;
     } else {
         peerJID = peer;
         useJingle = true;
+        this.useJingle = true;
     }
     var session = new MediaSession({
         sid: sid,
@@ -224,7 +228,12 @@ SessionManager.prototype._log = function (level, message) {
 };
 
 SessionManager.prototype.process = function (req) {
+    console.error('XXX1', req);
     var self = this;
+    if(req.signal){
+        this.useJingle = false;
+        self.useJingle = false;
+    }
 
     // Extract the request metadata that we need to verify
     var sid = !!req.jingle ? req.jingle.sid : null;
@@ -252,8 +261,17 @@ SessionManager.prototype.process = function (req) {
         return;
     }
 
-    var action = req.jingle.action;
-    var contents = req.jingle.contents || [];
+    var action = (req.signal && req.signal.action) ? BaseSession.prototype.mappedActions(req.signal.action) : req.jingle.action;
+    if(req.signal && req.signal.sdp){
+        console.error('XXX2', window.atob(req.signal.sdp));
+        var signal = sjj.toSessionJSON(window.atob(req.signal.sdp), {
+            creators: ['initiator'], // Who created the media contents
+            role: 'responder',   // Which side of the offer/answer are we acting as
+            direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
+        });
+        console.error('XXX3', signal);
+    }
+    var contents = (signal ? signal.contents : req.jingle.contents) || [];
 
     var applicationTypes = contents.map(function (content) {
         if (content.application) {

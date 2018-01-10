@@ -3,17 +3,18 @@
   "description": "Generic Jingle via WebRTC session manager.",
   "version": "3.0.3",
   "author": "Lance Stout <lance@andyet.net>",
-  "bugs": "https://github.com/otalk/jingle.js/issues",
+  "bugs": "https://github.com/itsazzad/jingle.js/issues",
   "contributors": [
     "Philipp Hancke <fippo@andyet.net>",
-    "Lloyd Watkin"
+    "Lloyd Watkin",
+    "Sazzad Hossain Khan <itsazzad@gmail.com>"
   ],
   "dependencies": {
     "extend-object": "^1.0.0",
     "intersect": "^0.1.0",
     "jingle-filetransfer-session": "^2.0.0",
-    "jingle-media-session": "^2.0.0",
-    "jingle-session": "^2.0.0",
+    "jingle-media-session": "file:../jingle-media-session",
+    "jingle-session": "file:../jingle-session",
     "wildemitter": "^1.0.1"
   },
   "devDependencies": {
@@ -29,7 +30,7 @@
     "uglify-js": "^2.4.15",
     "webrtc-adapter-test": "^0.1.4"
   },
-  "homepage": "https://github.com/otalk/jingle.js",
+  "homepage": "https://github.com/itsazzad/jingle.js",
   "keywords": [
     "webrtc",
     "xmpp",
@@ -39,7 +40,7 @@
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/otalk/jingle.js.git"
+    "url": "https://github.com/itsazzad/jingle.js.git"
   },
   "scripts": {
     "audit": "make audit",
