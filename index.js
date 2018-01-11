@@ -5,6 +5,8 @@ var WildEmitter = require('wildemitter');
 var BaseSession = require('jingle-session');
 var MediaSession = require('jingle-media-session');
 var FileSession = require('jingle-filetransfer-session');
+
+var transform = require('sdp-transform');
 var sjj = require('sdp-jingle-json');
 
 
@@ -263,13 +265,84 @@ SessionManager.prototype.process = function (req) {
 
     var action = (req.signal && req.signal.action) ? BaseSession.prototype.mappedActions(req.signal.action) : req.jingle.action;
     if(req.signal && req.signal.sdp){
-        console.error('XXX2', window.atob(req.signal.sdp));
-        var signal = sjj.toSessionJSON(window.atob(req.signal.sdp), {
+        var sdp = window.atob(req.signal.sdp);
+        console.error('XXX2', sdp);
+        var res = transform.parse(sdp);
+        console.error('XXX3', res);
+
+        sdp = 'v=0\n' +
+        'o=- 198146714528068009 2 IN IP4 127.0.0.1\n' +
+        's=-\n' +
+        't=0 0\n' +
+        'a=group:BUNDLE audio video\n' +
+        'a=msid-semantic: WMS ARDAMS\n' +
+        'm=audio 9 UDP/TLS/RTP/SAVPF 111 103 104 9 102 0 8 106 105 13 110 112 113 126\n' +
+        'c=IN IP4 0.0.0.0\n' +
+        'a=rtcp:9 IN IP4 0.0.0.0\n' +
+        'a=ice-ufrag:K2r7\n' +
+        'a=ice-pwd:KAV1zCFQyD8xG3o2unjasypn\n' +
+        'a=ice-options:trickle renomination\n' +
+        'a=fingerprint:sha-256 91:16:1A:7F:BC:20:2A:45:DB:B3:43:68:8A:A0:70:4A:63:DD:4C:A4:BA:C8:D0:A0:F4:C9:08:50:DA:CE:63:05\n' +
+        'a=setup:actpass\n' +
+        'a=mid:audio\n' +
+        'a=sendrecv\n' +
+        'a=rtcp-mux\n' +
+        'a=rtpmap:111 opus/48000/2\n' +
+        'a=fmtp:111 minptime=10;useinbandfec=1\n' +
+        'a=rtpmap:103 ISAC/16000\n' +
+        'a=rtpmap:104 ISAC/32000\n' +
+        'a=rtpmap:9 G722/8000\n' +
+        'a=rtpmap:102 ILBC/8000\n' +
+        'a=rtpmap:0 PCMU/8000\n' +
+        'a=rtpmap:8 PCMA/8000\n' +
+        'a=rtpmap:106 CN/32000\n' +
+        'a=rtpmap:105 CN/16000\n' +
+        'a=rtpmap:13 CN/8000\n' +
+        'a=rtpmap:110 telephone-event/48000\n' +
+        'a=rtpmap:112 telephone-event/32000\n' +
+        'a=rtpmap:113 telephone-event/16000\n' +
+        'a=rtpmap:126 telephone-event/8000\n' +
+        'a=ssrc:3739837625 cname:svf+DhFNLSgc4cQT\n' +
+        'a=ssrc:3739837625 msid:ARDAMS ARDAMSa0\n' +
+        'a=ssrc:3739837625 mslabel:ARDAMS\n' +
+        'a=ssrc:3739837625 label:ARDAMSa0\n' +
+        'm=video 9 UDP/TLS/RTP/SAVPF 96 98 100 127 97 99 101\n' +
+        'c=IN IP4 0.0.0.0\n' +
+        'a=rtcp:9 IN IP4 0.0.0.0\n' +
+        'a=ice-ufrag:K2r7\n' +
+        'a=ice-pwd:KAV1zCFQyD8xG3o2unjasypn\n' +
+        'a=ice-options:trickle renomination\n' +
+        'a=fingerprint:sha-256 91:16:1A:7F:BC:20:2A:45:DB:B3:43:68:8A:A0:70:4A:63:DD:4C:A4:BA:C8:D0:A0:F4:C9:08:50:DA:CE:63:05\n' +
+        'a=setup:actpass\n' +
+        'a=mid:video\n' +
+        'a=sendrecv\n' +
+        'a=rtcp-mux\n' +
+        'a=rtcp-rsize\n' +
+        'a=rtpmap:96 VP8/90000\n' +
+        'a=rtpmap:98 VP9/90000\n' +
+        'a=rtpmap:100 red/90000\n' +
+        'a=rtpmap:127 ulpfec/90000\n' +
+        'a=rtpmap:97 rtx/90000\n' +
+        'a=fmtp:97 apt=96\n' +
+        'a=rtpmap:99 rtx/90000\n' +
+        'a=fmtp:99 apt=98\n' +
+        'a=rtpmap:101 rtx/90000\n' +
+        'a=fmtp:101 apt=100\n' +
+        'a=ssrc-group:FID 299990220 2484813461\n' +
+        'a=ssrc:299990220 cname:svf+DhFNLSgc4cQT\n' +
+        'a=ssrc:299990220 msid:ARDAMS ARDAMSv0\n' +
+        'a=ssrc:299990220 mslabel:ARDAMS\n' +
+        'a=ssrc:299990220 label:ARDAMSv0\n' +
+        'a=ssrc:2484813461 cname:svf+DhFNLSgc4cQT\n' +
+        'a=ssrc:2484813461 msid:ARDAMS ARDAMSv0\n' +
+        'a=ssrc:2484813461 mslabel:ARDAMS\n' +
+        'a=ssrc:2484813461 label:ARDAMSv0';
+        var signal = sjj.toSessionJSON(sdp, {
             creators: ['initiator'], // Who created the media contents
             role: 'responder',   // Which side of the offer/answer are we acting as
             direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
         });
-        console.error('XXX3', signal);
+        console.error('XXX4', signal);
     }
     var contents = (signal ? signal.contents : req.jingle.contents) || [];
 
