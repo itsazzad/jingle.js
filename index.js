@@ -32,7 +32,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        var applicationTypes= req.jingle.contents.map(function (content) {
+        var applicationTypes = req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
             }
@@ -231,13 +231,14 @@ SessionManager.prototype._log = function (level, message) {
 
 SessionManager.prototype.process = function (req) {
     var self = this;
-    if(req.signal){
+    if (req.signal) {
         this.useJingle = false;
         self.useJingle = false;
+        req.signal.sid = req.id;
     }
 
     // Extract the request metadata that we need to verify
-    var sid = !!req.jingle ? req.jingle.sid : null;
+    var sid = !!req.signal ? req.signal.sid : req.jingle.sid;
     var session = this.sessions[sid] || null;
     var rid = req.id;
     var sender = req.from.full || req.from;
@@ -262,20 +263,21 @@ SessionManager.prototype.process = function (req) {
         return;
     }
 
-    var action = (req.signal && req.signal.action) ? BaseSession.prototype.mappedActions(req.signal.action) : req.jingle.action;
-    if(req.signal && req.signal.sdp){
-        var sdp = window.atob(req.signal.sdp);
-        // var res = transform.parse(sdp);
-        var signalSDP = sjj.toSessionJSON(sdp, {
+    var action = (req.signal && req.signal.action) ?
+        BaseSession.prototype.mappedActions(req.signal.action) :
+        req.jingle.action;
+    if (req.signal && req.signal.sdp) {
+        req.signal.sdp = sjj.toSessionJSON(window.atob(req.signal.sdp), {
             creators: ['initiator'], // Who created the media contents
             role: 'responder',   // Which side of the offer/answer are we acting as
             direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
         });
-        req.signal.sdp = signalSDP;
+        req.signal.sdp.action = action;
+        req.signal.sdp.sid = sid;
     }
     var contents = ((req.signal && req.signal.sdp) ?
-    (req.signal.sdp.contents ? req.signal.sdp.contents : []) :
-    (req.jingle ? req.jingle.contents : [])) || [];
+        (req.signal.sdp.contents ? req.signal.sdp.contents : []) :
+        (req.jingle ? req.jingle.contents : [])) || [];
 
     var applicationTypes = contents.map(function (content) {
         if (content.application) {
@@ -395,6 +397,7 @@ SessionManager.prototype.process = function (req) {
         }, req);
     }
 
+    console.error('XXX', 'process', req.jingle ? req.jingle : req.signal.sdp);
     session.process(action, req.jingle ? req.jingle : req.signal.sdp, function (err) {
         if (err) {
             self._log('error', 'Could not process request', req, err);
