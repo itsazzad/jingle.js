@@ -20,7 +20,6 @@ function SessionManager(conf) {
 
     this.sessions = {};
     this.peers = {};
-    this.useJingle = true;
 
     this.prepareSession = conf.prepareSession || function (opts) {
         if (opts.applicationTypes.indexOf('rtp') >= 0) {
@@ -230,9 +229,9 @@ SessionManager.prototype._log = function (level, message) {
 };
 
 SessionManager.prototype.process = function (req) {
+    console.error('JJJ', 'jingle.js', 'process', req);
     var self = this;
     if (req.signal) {
-        this.useJingle = false;
         self.useJingle = false;
         req.signal.sid = req.id;
     }
@@ -393,21 +392,23 @@ SessionManager.prototype.process = function (req) {
             applicationTypes: applicationTypes,
             transportTypes: transportTypes,
             iceServers: this.iceServers,
-            constraints: this.config.peerConnectionConstraints
+            constraints: this.config.peerConnectionConstraints,
+            useJingle: self.useJingle
         }, req);
     }
 
-    console.error('XXX', 'process', req.jingle ? req.jingle : req.signal.sdp);
     session.process(action, req.jingle ? req.jingle : req.signal.sdp, function (err) {
         if (err) {
             self._log('error', 'Could not process request', req, err);
             self._sendError(sender, rid, err);
         } else {
-            self.emit('send', {
-                to: sender,
-                id: rid,
-                type: 'result',
-            });
+            if (!req.signal) { // No need to send result for connect:signal as it doesn't process
+                self.emit('send', {
+                    to: sender,
+                    id: rid,
+                    type: 'result',
+                });
+            }
 
             // Wait for the initial action to be processed before emitting
             // the session for the user to accept/reject.
