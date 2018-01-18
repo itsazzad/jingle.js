@@ -135,20 +135,17 @@ SessionManager.prototype.addSession = function (session) {
 
 SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
     let peerJID;
-    let useJingle;
     if (peer !== null && typeof peer === 'object') {
         peerJID = peer.jid;
-        useJingle = peer.useJingle;
         this.useJingle = peer.useJingle;
     } else {
         peerJID = peer;
-        useJingle = true;
         this.useJingle = true;
     }
     var session = new MediaSession({
         sid: sid,
         peer: peerJID,
-        useJingle,
+        useJingle: this.useJingle,
         initiator: true,
         stream: stream,
         parent: this,
