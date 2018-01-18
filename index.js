@@ -31,7 +31,7 @@ function SessionManager(conf) {
     };
 
     this.performTieBreak = conf.performTieBreak || function (sess, req) {
-        var applicationTypes = req.jingle.contents.map(function (content) {
+        var applicationTypes= req.jingle.contents.map(function (content) {
             if (content.application) {
                 return content.application.applicationType;
             }
