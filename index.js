@@ -148,12 +148,12 @@ SessionManager.prototype.createMediaSession = function (peer, sid, stream) {
     var session = new MediaSession({
         sid: sid,
         peer: peerJID,
+        useJingle,
         initiator: true,
         stream: stream,
         parent: this,
         iceServers: this.iceServers,
-        constraints: this.config.peerConnectionConstraints,
-        useJingle,
+        constraints: this.config.peerConnectionConstraints
     });
 
     this.addSession(session);
@@ -237,7 +237,7 @@ SessionManager.prototype.process = function (req) {
     }
 
     // Extract the request metadata that we need to verify
-    var sid = !!req.signal ? req.signal.sid : req.jingle.sid;
+    var sid = !!req.signal ? req.signal.sid : (!!req.jingle ? req.jingle.sid : null);
     var session = this.sessions[sid] || null;
     var rid = req.id;
     var sender = req.from.full || req.from;
@@ -275,10 +275,10 @@ SessionManager.prototype.process = function (req) {
         req.signal.sdp.sid = sid;
     }
     var contents = ((req.signal && req.signal.sdp) ?
-        (req.signal.sdp.contents ? req.signal.sdp.contents : []) :
-        (req.jingle ? req.jingle.contents : [])) || [];
+        (req.signal.sdp.contents || []) :
+        (req.jingle ? req.jingle.contents || [] : []));
 
-    var applicationTypes = contents.map(function (content) {
+    var applicationTypes= contents.map(function (content) {
         if (content.application) {
             return content.application.applicationType;
         }
@@ -387,36 +387,39 @@ SessionManager.prototype.process = function (req) {
             sid: sid,
             peer: req.from,
             peerID: sender,
+            useJingle: self.useJingle,
             initiator: false,
             parent: this,
             applicationTypes: applicationTypes,
             transportTypes: transportTypes,
             iceServers: this.iceServers,
-            constraints: this.config.peerConnectionConstraints,
-            useJingle: self.useJingle
+            constraints: this.config.peerConnectionConstraints
         }, req);
     }
 
-    session.process(action, req.jingle ? req.jingle : req.signal.sdp, function (err) {
-        if (err) {
-            self._log('error', 'Could not process request', req, err);
-            self._sendError(sender, rid, err);
-        } else {
-            if (!req.signal) { // No need to send result for connect:signal as it doesn't process
-                self.emit('send', {
-                    to: sender,
-                    id: rid,
-                    type: 'result',
-                });
-            }
+    if (req.jingle || req.signal) {
+        console.error('JJJ', 'jingle.js', 'session.process', req.signal, req.signal.sdp);
+        session.process(action, req.jingle || req.signal.sdp, function (err) {
+            if (err) {
+                self._log('error', 'Could not process request', req, err);
+                self._sendError(sender, rid, err);
+            } else {
+                if (!req.signal) { // No need to send result for connect:signal as it doesn't process
+                    self.emit('send', {
+                        to: sender,
+                        id: rid,
+                        type: 'result',
+                    });
+                }
 
-            // Wait for the initial action to be processed before emitting
-            // the session for the user to accept/reject.
-            if (action === 'session-initiate') {
-                self.emit('incoming', session);
+                // Wait for the initial action to be processed before emitting
+                // the session for the user to accept/reject.
+                if (action === 'session-initiate') {
+                    self.emit('incoming', session);
+                }
             }
-        }
-    });
+        });
+    }
 };
 
 
