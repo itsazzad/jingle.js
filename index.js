@@ -278,7 +278,7 @@ SessionManager.prototype.process = function (req) {
         (req.signal.sdp.contents || []) :
         (req.jingle ? req.jingle.contents || [] : []));
 
-    var applicationTypes= contents.map(function (content) {
+    var applicationTypes = contents.map(function (content) {
         if (content.application) {
             return content.application.applicationType;
         }
@@ -397,29 +397,27 @@ SessionManager.prototype.process = function (req) {
         }, req);
     }
 
-    if (req.jingle || req.signal) {
-        console.error('JJJ', 'jingle.js', 'session.process', req.signal, req.signal.sdp);
-        session.process(action, req.jingle || req.signal.sdp, function (err) {
-            if (err) {
-                self._log('error', 'Could not process request', req, err);
-                self._sendError(sender, rid, err);
-            } else {
-                if (!req.signal) { // No need to send result for connect:signal as it doesn't process
-                    self.emit('send', {
-                        to: sender,
-                        id: rid,
-                        type: 'result',
-                    });
-                }
-
-                // Wait for the initial action to be processed before emitting
-                // the session for the user to accept/reject.
-                if (action === 'session-initiate') {
-                    self.emit('incoming', session);
-                }
+    console.error('JJJ', 'jingle.js', 'session.process', req.signal, req.signal.sdp);
+    session.process(action, req.jingle || (req.signal ? (req.signal.sdp || {}) : {}), function (err) {
+        if (err) {
+            self._log('error', 'Could not process request', req, err);
+            self._sendError(sender, rid, err);
+        } else {
+            if (!req.signal) { // No need to send result for connect:signal as it doesn't process
+                self.emit('send', {
+                    to: sender,
+                    id: rid,
+                    type: 'result',
+                });
             }
-        });
-    }
+
+            // Wait for the initial action to be processed before emitting
+            // the session for the user to accept/reject.
+            if (action === 'session-initiate') {
+                self.emit('incoming', session);
+            }
+        }
+    });
 };
 
 
