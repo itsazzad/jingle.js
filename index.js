@@ -226,7 +226,6 @@ SessionManager.prototype._log = function (level, message) {
 };
 
 SessionManager.prototype.process = function (req) {
-    console.error('JJJ', 'jingle.js', 'process', req);
     var self = this;
     if (req.signal) {
         self.useJingle = false;
@@ -262,14 +261,39 @@ SessionManager.prototype.process = function (req) {
     var action = (req.signal && req.signal.action) ?
         BaseSession.prototype.mappedActions(req.signal.action) :
         req.jingle.action;
-    if (req.signal && req.signal.sdp) {
-        req.signal.sdp = sjj.toSessionJSON(window.atob(req.signal.sdp), {
-            creators: ['initiator'], // Who created the media contents
-            role: 'responder',   // Which side of the offer/answer are we acting as
-            direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
-        });
-        req.signal.sdp.action = action;
-        req.signal.sdp.sid = sid;
+    console.error('REQSignal', this);
+    if (req.signal) {
+        if (req.signal.sdp) {
+            req.signal.sdp = sjj.toSessionJSON(window.atob(req.signal.sdp), {
+                creators: ['initiator'], // Who created the media contents
+                role: 'responder',   // Which side of the offer/answer are we acting as
+                direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
+            });
+            req.signal.sdp.action = action;
+            req.signal.sdp.sid = sid;
+        }
+        if (req.signal.candidate) {
+            var candidate = sjj.toCandidateJSON(window.atob(req.signal.candidate));
+            var content = {
+                creator: 'initiator',
+                disposition: 'session',
+                name: 'audio', // audio/video
+                senders: 'both',
+                transport: {
+                    transportType: 'iceUdp',
+                    // pwd: '',
+                    // ufrag: '',
+                    candidates: [],
+                }
+            };
+            content.transport.candidates.push(candidate);
+            req.signal.candidate = {
+                action: 'transport-info',
+                sid,
+                contents: [],
+            };
+            req.signal.candidate.contents.push(content);
+        }
     }
     var contents = ((req.signal && req.signal.sdp) ?
         (req.signal.sdp.contents || []) :
@@ -394,13 +418,12 @@ SessionManager.prototype.process = function (req) {
         }, req);
     }
 
-    console.error('JJJ', 'jingle.js', 'session.process', req.signal, req.signal.sdp);
-    session.process(action, req.jingle || (req.signal ? (req.signal.sdp || {}) : {}), function (err) {
+    session.process(action, req.jingle || (req.signal.sdp || req.signal.candidate), function (err) {
         if (err) {
             self._log('error', 'Could not process request', req, err);
             self._sendError(sender, rid, err);
         } else {
-            if (!req.signal) { // No need to send result for connect:signal as it doesn't process
+            if (!req.signal) { // No need to send result for connect:signal as it doesn't process results
                 self.emit('send', {
                     to: sender,
                     id: rid,
