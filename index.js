@@ -7,7 +7,7 @@ var MediaSession = require('jingle-media-session');
 var FileSession = require('jingle-filetransfer-session');
 
 var transform = require('sdp-transform');
-var sjj = require('sdp-jingle-json');
+var SJJ = require('sdp-jingle-json');
 
 
 function SessionManager(conf) {
@@ -221,8 +221,8 @@ SessionManager.prototype._sendError = function (to, id, data) {
     });
 };
 
-SessionManager.prototype._log = function (level, message) {
-    this.emit('log:' + level, message);
+SessionManager.prototype._log = function (level, message, details) {
+    this.emit('log:' + level, message, details);
 };
 
 SessionManager.prototype.process = function (req) {
@@ -261,19 +261,14 @@ SessionManager.prototype.process = function (req) {
     var action = (req.signal && req.signal.action) ?
         BaseSession.prototype.mappedActions(req.signal.action) :
         req.jingle.action;
-    console.error('REQSignal', this);
     if (req.signal) {
         if (req.signal.sdp) {
-            req.signal.sdp = sjj.toSessionJSON(window.atob(req.signal.sdp), {
-                creators: ['initiator'], // Who created the media contents
-                role: 'responder',   // Which side of the offer/answer are we acting as
-                direction: 'incoming' // Are we parsing SDP that we are sending or receiving?
-            });
+            req.signal.sdp = SJJ.toIncomingJSONOffer(window.atob(req.signal.sdp), ['initiator']);
             req.signal.sdp.action = action;
             req.signal.sdp.sid = sid;
         }
         if (req.signal.candidate) {
-            var candidate = sjj.toCandidateJSON(window.atob(req.signal.candidate));
+            var candidate = SJJ.toCandidateJSON(window.atob(req.signal.candidate));
             var content = {
                 creator: 'initiator',
                 disposition: 'session',
@@ -317,7 +312,7 @@ SessionManager.prototype.process = function (req) {
     if (action !== 'session-initiate') {
         // Can't modify a session that we don't have.
         if (!session) {
-            this._log('error', 'Unknown session', sid);
+            this._log('error', 'Unknown session', {sid, session, action});
             return this._sendError(sender, rid, {
                 condition: 'item-not-found',
                 jingleCondition: 'unknown-session'
@@ -326,7 +321,7 @@ SessionManager.prototype.process = function (req) {
 
         // Check if someone is trying to hijack a session.
         if (session.peerID !== sender || session.ended) {
-            this._log('error', 'Session has ended, or action has wrong sender');
+            this._log('error', 'Session has ended, or action has wrong sender', {sender, session});
             return this._sendError(sender, rid, {
                 condition: 'item-not-found',
                 jingleCondition: 'unknown-session'
@@ -335,7 +330,7 @@ SessionManager.prototype.process = function (req) {
 
         // Can't accept a session twice
         if (action === 'session-accept' && !session.pending) {
-            this._log('error', 'Tried to accept session twice', sid);
+            this._log('error', 'Tried to accept session twice', {sid, session, action});
             return this._sendError(sender, rid, {
                 condition: 'unexpected-request',
                 jingleCondition: 'out-of-order'
@@ -344,7 +339,7 @@ SessionManager.prototype.process = function (req) {
 
         // Can't process two requests at once, need to tie break
         if (action !== 'session-terminate' && action === session.pendingAction) {
-            this._log('error', 'Tie break during pending request');
+            this._log('error', 'Tie break during pending request', {action, session});
             if (session.isInitiator) {
                 return this._sendError(sender, rid, {
                     condition: 'conflict',
@@ -355,7 +350,7 @@ SessionManager.prototype.process = function (req) {
     } else if (session) {
         // Don't accept a new session if we already have one.
         if (session.peerID !== sender) {
-            this._log('error', 'Duplicate sid from new sender');
+            this._log('error', 'Duplicate sid from new sender', {sender, session});
             return this._sendError(sender, rid, {
                 condition: 'service-unavailable'
             });
@@ -365,7 +360,7 @@ SessionManager.prototype.process = function (req) {
         // happened to pick the same random sid.
         if (session.pending) {
             if (this.selfID > session.peerID && this.performTieBreak(session, req)) {
-                this._log('error', 'Tie break new session because of duplicate sids');
+                this._log('error', 'Tie break new session because of duplicate sids', {selfID: this.selfID, req, session});
                 return this._sendError(sender, rid, {
                     condition: 'conflict',
                     jingleCondition: 'tie-break'
@@ -373,7 +368,7 @@ SessionManager.prototype.process = function (req) {
             }
         } else {
             // The other side is just doing it wrong.
-            this._log('error', 'Someone is doing this wrong');
+            this._log('error', 'Someone is doing this wrong', session);
             return this._sendError(sender, rid, {
                 condition: 'unexpected-request',
                 jingleCondition: 'out-of-order'
@@ -420,7 +415,7 @@ SessionManager.prototype.process = function (req) {
 
     session.process(action, req.jingle || (req.signal.sdp || req.signal.candidate), function (err) {
         if (err) {
-            self._log('error', 'Could not process request', req, err);
+            self._log('error', 'Could not process request', {req, err});
             self._sendError(sender, rid, err);
         } else {
             if (!req.signal) { // No need to send result for connect:signal as it doesn't process results
