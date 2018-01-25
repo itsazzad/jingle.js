@@ -9,7 +9,6 @@ var FileSession = require('jingle-filetransfer-session');
 var transform = require('sdp-transform');
 var SJJ = require('sdp-jingle-json');
 
-
 function SessionManager(conf) {
     WildEmitter.call(this);
 
@@ -264,7 +263,6 @@ SessionManager.prototype.process = function (req) {
     if (req.signal) {
         if (req.signal.sdp) {
             var sdp = window.atob(req.signal.sdp);
-            console.error('process:rawsdp', sdp);
             req.signal.sdp = SJJ.toIncomingJSONOffer(sdp, ['initiator']);
             req.signal.sdp.action = action;
             req.signal.sdp.sid = sid;
