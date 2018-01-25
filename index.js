@@ -263,7 +263,9 @@ SessionManager.prototype.process = function (req) {
         req.jingle.action;
     if (req.signal) {
         if (req.signal.sdp) {
-            req.signal.sdp = SJJ.toIncomingJSONOffer(window.atob(req.signal.sdp), ['initiator']);
+            var sdp = window.atob(req.signal.sdp);
+            console.error('process:rawsdp', sdp);
+            req.signal.sdp = SJJ.toIncomingJSONOffer(sdp, ['initiator']);
             req.signal.sdp.action = action;
             req.signal.sdp.sid = sid;
         }
