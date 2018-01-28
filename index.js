@@ -261,11 +261,13 @@ SessionManager.prototype.process = function (req) {
         BaseSession.prototype.mappedActions(req.signal.action) :
         req.jingle.action;
     if (req.signal) {
+        req.jingle = {
+            action,
+            sid,
+            contents: [],
+        };
         if (req.signal.sdp) {
-            var sdp = window.atob(req.signal.sdp);
-            req.signal.sdp = SJJ.toIncomingJSONOffer(sdp, ['initiator']);
-            req.signal.sdp.action = action;
-            req.signal.sdp.sid = sid;
+            req.jingle = Object.assign(req.jingle, SJJ.toIncomingJSONOffer(window.atob(req.signal.sdp), ['initiator']));
         }
         if (req.signal.candidate) {
             var candidate = SJJ.toCandidateJSON(window.atob(req.signal.candidate));
@@ -282,17 +284,11 @@ SessionManager.prototype.process = function (req) {
                 }
             };
             content.transport.candidates.push(candidate);
-            req.signal.candidate = {
-                action: 'transport-info',
-                sid,
-                contents: [],
-            };
-            req.signal.candidate.contents.push(content);
+            req.jingle.contents = [];
+            req.jingle.contents.push(content);
         }
     }
-    var contents = ((req.signal && req.signal.sdp) ?
-        (req.signal.sdp.contents || []) :
-        (req.jingle ? req.jingle.contents || [] : []));
+    var contents = req.jingle.contents || [];
 
     var applicationTypes = contents.map(function (content) {
         if (content.application) {
@@ -413,7 +409,7 @@ SessionManager.prototype.process = function (req) {
         }, req);
     }
 
-    session.process(action, req.jingle || (req.signal.sdp || req.signal.candidate), function (err) {
+    session.process(action, req.jingle, function (err) {
         if (err) {
             self._log('error', 'Could not process request', {req, err});
             self._sendError(sender, rid, err);
