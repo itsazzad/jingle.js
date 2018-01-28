@@ -16,7 +16,6 @@
     "jingle-media-session": "git+https://github.com/itsazzad/jingle-media-session.git#v2.1.1-jingle-signal-0",
     "jingle-session": "git+https://github.com/itsazzad/jingle-session.git#v2.0.3-jingle-signal-0",
     "sdp-jingle-json": "^3.0.2",
-    "sdp-transform": "^2.3.1",
     "wildemitter": "^1.0.1"
   },
   "devDependencies": {

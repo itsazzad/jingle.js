@@ -6,7 +6,6 @@ var BaseSession = require('jingle-session');
 var MediaSession = require('jingle-media-session');
 var FileSession = require('jingle-filetransfer-session');
 
-var transform = require('sdp-transform');
 var SJJ = require('sdp-jingle-json');
 
 function SessionManager(conf) {
