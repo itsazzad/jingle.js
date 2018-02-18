@@ -234,7 +234,7 @@ SessionManager.prototype.process = function (req) {
     var sid = !!req.signal ? req.signal.sid : (!!req.jingle ? req.jingle.sid : null);
     var session = this.sessions[sid] || null;
     var rid = req.id;
-    var sender = req.from.full || req.from;
+    var sender = (self.useJingle === false) ? req.from.bare : (req.from.full || req.from);
 
 
     if (req.type === 'error') {
