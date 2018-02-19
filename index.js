@@ -227,6 +227,7 @@ SessionManager.prototype.process = function (req) {
     var self = this;
     if (req.signal) {
         self.useJingle = false;
+        this.useJingle = false;
         req.signal.sid = req.id;
     }
 
@@ -234,7 +235,7 @@ SessionManager.prototype.process = function (req) {
     var sid = !!req.signal ? req.signal.sid : (!!req.jingle ? req.jingle.sid : null);
     var session = this.sessions[sid] || null;
     var rid = req.id;
-    var sender = (self.useJingle === false) ? req.from.bare : (req.from.full || req.from);
+    var sender = req.from.full || req.from;
 
 
     if (req.type === 'error') {
@@ -315,7 +316,7 @@ SessionManager.prototype.process = function (req) {
         }
 
         // Check if someone is trying to hijack a session.
-        if (session.peerID !== sender || session.ended) {
+        if (session.peerID.split('/')[0] !== sender.split('/')[0] || session.ended) {
             this._log('error', 'Session has ended, or action has wrong sender', {sender, session});
             return this._sendError(sender, rid, {
                 condition: 'item-not-found',
@@ -398,7 +399,7 @@ SessionManager.prototype.process = function (req) {
             sid: sid,
             peer: req.from,
             peerID: sender,
-            useJingle: self.useJingle,
+            useJingle: this.useJingle,
             initiator: false,
             parent: this,
             applicationTypes: applicationTypes,
